@@ -81,7 +81,7 @@ class Ability:
         if self.access_rules.user.is_superuser:
             return model.objects.all()
         else:
-            for c in model_abilities
+            for c in model_abilities:
                 if c["type"] == "can" and "conditions" in c:
                     qs = model.objects.all().filter(**c.get("conditions", {}))
     
