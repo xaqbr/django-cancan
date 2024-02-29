@@ -57,6 +57,10 @@ class Ability:
     def can(self, action, subject) -> bool:
         subject = normalize_subject(subject)
         action = self.access_rules.alias_to_action(action)
+
+        # Superusers naturally should have access to everything, otherwise check permissions.
+        if self.access_rules.user.is_superuser:
+            return True
         if inspect.isclass(subject):
             return self.validate_model(action, subject)
         else:
@@ -72,14 +76,19 @@ class Ability:
         )
 
         query_sets = []
-        for c in model_abilities:
-            if c["type"] == "can" and "conditions" in c:
-                qs = model.objects.all().filter(**c.get("conditions", {}))
 
-            if c["type"] == "cannot":
-                raise NotImplementedError("cannot-type rules are not yet implemented")
-
-            query_sets.append(qs)
+        # Superusers naturally should have access to everything, otherwise check permissions.
+        if self.access_rules.user.is_superuser:
+            return model.objects.all()
+        else:
+            for c in model_abilities
+                if c["type"] == "can" and "conditions" in c:
+                    qs = model.objects.all().filter(**c.get("conditions", {}))
+    
+                if c["type"] == "cannot":
+                    raise NotImplementedError("cannot-type rules are not yet implemented")
+    
+                query_sets.append(qs)
 
         if len(query_sets) == 0:
             return model.objects.none()
